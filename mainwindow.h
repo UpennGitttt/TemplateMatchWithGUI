@@ -21,8 +21,6 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pushButton_mainfunction_clicked();
-
     void on_pushButton_uploadimg_clicked();
 
     void on_pushButton_getmask_clicked();
@@ -41,6 +39,28 @@ private slots:
 
     void on_pushButton_checkTempFeatures_clicked();
 
+    void on_pushButton_uploadRunImg_clicked();
+
+    void on_pushButton_setRunPyramidLevel_clicked();
+
+    void on_pushButton_setOverlapRatio_clicked();
+
+    void on_pushButton_setScoreThreshold_clicked();
+
+    void on_pushButton_runTempMatch_clicked();
+
+    void on_pushButton_getCenter_clicked();
+
+    void on_pushButton_showRunRes_clicked();
+
+    void on_pushButton_getHomogrhy_clicked();
+
+    void on_pushButton_getscore_clicked();
+
+    void on_pushButton_getAngle_clicked();
+
+    void on_pushButton_writeJson_clicked();
+
 private:
     cv::Mat train_cvimg;
     QPixmap train_qimg;
@@ -48,12 +68,13 @@ private:
 
     cv::Mat run_cvimg;
     QPixmap run_qimg;
-
+    bool is_trained{ false };
+    bool is_OK{ false };
     Ui::MainWindow *ui;
     std::shared_ptr<mark::TrainTemplateMatch> trainTool;
     std::shared_ptr<mark::RunTemplateMatch> runTool;
-    std::shared_ptr<mark::TrainOutput> trainOutput;
-    std::shared_ptr<mark::RunOutput> runOutput;
+    //std::shared_ptr<mark::TrainOutput> trainOutput;
+    //std::shared_ptr<mark::RunOutput> runOutput;
     // mark::TrainTemplateMatch *train;
     DrawingWidget *drawingWidget;
     ImageDisplayWidget *imageDisplayWidget;

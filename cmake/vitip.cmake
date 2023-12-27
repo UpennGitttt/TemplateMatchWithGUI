@@ -23,7 +23,7 @@ set_target_properties(vitip3 PROPERTIES
 set(Vitip_INCLUDE_DIRS ${vitip_SOURCE_DIR}/include  CACHE STRING "" FORCE)
 file(GLOB  Vitip_LIBRARY "${Vitip_LOCAL_PATH}/lib/*")
 file(GLOB Vitip_DLLS "${vitip_SOURCE_DIR}/bin/*.dll")
-# file(COPY ${Vitip_DLLS} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+file(COPY ${Vitip_DLLS} DESTINATION ${CMAKE_BINARY_DIR})
 
 #if(EXISTS ${vitip_SOURCE_DIR})
 #    set(Vitip_INCLUDE_DIRS ${vitip_SOURCE_DIR}/include  CACHE STRING "" FORCE)

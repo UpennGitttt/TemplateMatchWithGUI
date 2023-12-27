@@ -4,8 +4,9 @@ project(Execution)
 
 file(GLOB_RECURSE SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
 file(GLOB Execution_EXPORT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
-
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${Execution_EXPORT_HEADERS})
+
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
                            ${Vitip_INCLUDE_DIRS}
@@ -14,6 +15,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(
 	${PROJECT_NAME} PRIVATE
+        Qt${QT_VERSION_MAJOR}::Widgets
         vitip::vitip3
 	${OpenCV_LIBS}
 )

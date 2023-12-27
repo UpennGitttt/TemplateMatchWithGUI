@@ -11,14 +11,19 @@ class ImageDisplayWidget : public QWidget {
 
 public:
     explicit ImageDisplayWidget(QWidget *parent = nullptr);
-    void setImageAndFeatures(const cv::Mat &image, const std::vector<cv::Point2f> &features);
+    void setImageAndFeatures(const QImage& newImage, const std::vector<cv::Point2f> &features, bool flag);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    cv::Mat cvImage;
+    QImage image;
+    qreal xScaleFactor;
+    qreal yScaleFactor;
+    bool is_train = true;
     std::vector<cv::Point2f> features;
+    void drawCircle(QPainter& painter, const QPoint& point) const;
+
 };
 
 #endif // IMAGEDISPLAYWIDGET_H

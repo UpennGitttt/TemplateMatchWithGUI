@@ -4,22 +4,39 @@
 ImageDisplayWidget::ImageDisplayWidget(QWidget *parent) : QWidget(parent) {
 }
 
-void ImageDisplayWidget::setImageAndFeatures(const cv::Mat &image, const std::vector<cv::Point2f> &features) {
-    cvImage = image.clone();
+void ImageDisplayWidget::setImageAndFeatures(const QImage& newImage, const std::vector<cv::Point2f> &features, bool flag) {
+    image = newImage;
     this->features = features;
-    update();  // Trigger a repaint
+    is_train = flag;
+    //update();  // Trigger a repaint
+}
+
+void ImageDisplayWidget::drawCircle(QPainter& painter, const QPoint& point) const {
+    const int radius = 1; // Set the radius of the brush
+    painter.drawEllipse(point, radius, 0); // Draw a circle at the given point
 }
 
 void ImageDisplayWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
-    if (!cvImage.empty()) {
-        QImage qimg(cvImage.data, cvImage.cols, cvImage.rows, cvImage.step, QImage::Format_RGB888);
-        painter.drawImage(rect(), qimg.rgbSwapped()); // Assumes the cv::Mat is in RGB format
 
-        QPen pen(Qt::red);
-        painter.setPen(pen);
-        for (const auto &feature : features) {
-            painter.drawEllipse(QPointF(feature.x, feature.y), 5, 5);
+    QSize scaledSize = image.size();
+    scaledSize.scale(size(), Qt::KeepAspectRatio);
+    xScaleFactor = (qreal)scaledSize.width() / image.width();
+    yScaleFactor = (qreal)scaledSize.height() / image.height();
+
+    painter.drawImage(QRect(QPoint(0, 0), scaledSize), image);
+
+    QPen pen(Qt::green);
+    painter.setPen(pen);
+    if (is_train) {
+        for (const auto& feature : features) {
+            drawCircle(painter, QPoint((feature.x + image.width() / 2.0) * xScaleFactor, (feature.y + image.height() / 2.0) * yScaleFactor)); // 修复回去
         }
     }
+    else {
+        for (const auto& feature : features) {
+            drawCircle(painter, QPoint((feature.x) * xScaleFactor, (feature.y) * yScaleFactor)); // 修复回去
+        }
+    }
+ 
 }

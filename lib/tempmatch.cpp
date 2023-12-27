@@ -2,6 +2,8 @@
 #include "opencv2/opencv.hpp"
 #include "memory.h"
 #include "filesystem"
+#include <QMessageBox>
+#include <qdebug.h>
 
 namespace fs = std::filesystem;
 namespace mark{
@@ -11,9 +13,11 @@ public:
     smartmore::vitip::TrainParamsPlanar trainParams;
     smartmore::vitip::PatternPlanar fm_tool_pattern;
     std::shared_ptr<smartmore::vitip::TemplateTrain> fm_tool_train;
+    std::shared_ptr<smartmore::vitip::TrainParamsPlanar> trainParams_ptr;
+    std::shared_ptr<smartmore::vitip::PatternPlanar> fm_tool_train_ptr;
     Impl(){
         trainParams.SetAngleParams(0, 360, 0.5);
-        trainParams.SetCannyThreshold(10, 100);
+        trainParams.SetCannyThreshold(10, 105);
         trainParams.SetContourLengthProportion(1);
         trainParams.SetPyramidLevel(5);
         trainParams.SetTimeLimit(5000);
@@ -63,8 +67,6 @@ bool TrainTemplateMatch::setTimeLimit(int limit)
 
 bool TrainTemplateMatch::trainTemplateMatch(cv::Mat image, cv::Mat mask){
     smartmore::vitip::ErrorCode code;
-    std::cout << "num of features before train: " << impl_->fm_tool_pattern.getOriginalTemplateCurve().size() << std::endl;
-    std::cout << "Template size before train: " << impl_->fm_tool_pattern.getOriginalTemplateSize() << std::endl;
     try{
         if(mask.empty()){
             code = impl_->fm_tool_train->templateTrain(image, impl_->fm_tool_pattern, impl_->trainParams, image);
@@ -81,33 +83,35 @@ bool TrainTemplateMatch::trainTemplateMatch(cv::Mat image, cv::Mat mask){
     }
 
     std::cout << impl_->trainParams.GetAngleStep() << std::endl;
-    std::cout << "Template size after train: " << impl_->fm_tool_pattern.getOriginalTemplateSize() << std::endl;
-    std::cout << impl_->fm_tool_pattern.getOriginalTemplateCurve().size() << std::endl;
-    // std::cout << "num of features after train " << numf << std::endl;
+    qDebug() << "num of features after train: " << impl_->fm_tool_pattern.getOriginalTemplateCurve().size();
 
     return true;
 }
 
-const smartmore::vitip::PatternPlanar& TrainTemplateMatch::getFMTool()
+std::shared_ptr<smartmore::vitip::PatternPlanar>& TrainTemplateMatch::getFMTool()
 {
-    return impl_->fm_tool_pattern;
+    impl_->fm_tool_train_ptr = std::make_shared<smartmore::vitip::PatternPlanar>(impl_->fm_tool_pattern);
+    return impl_->fm_tool_train_ptr;
 }
 
-const smartmore::vitip::TrainParamsPlanar& TrainTemplateMatch::getTrainParmas()
+std::shared_ptr<smartmore::vitip::TrainParamsPlanar>& TrainTemplateMatch::getTrainParmas()
 {
-    return impl_->trainParams;
+    impl_->trainParams_ptr = std::make_shared<smartmore::vitip::TrainParamsPlanar>(impl_->trainParams);
+    return impl_->trainParams_ptr;
 }
 
 class RunTemplateMatch::Impl{
 public:
-    TrainTemplateMatch trainParams;
-    smartmore::vitip::PatternPlanar fm_tool_pattern;
     smartmore::vitip::RunParamsPlanar runParams;
     smartmore::vitip::OutputPlanar output;
     smartmore::vitip::TemplateRun fm_tool_run;
+    std::shared_ptr<smartmore::vitip::OutputPlanar> output_ptr;
 
     Impl(){
-        fm_tool_pattern = trainParams.getFMTool();
+        runParams.setOverlapThreshold(0.5);
+        runParams.setScoreThreshold(0.5);
+        runParams.SetPyramidLevel(1);
+        runParams.SetTimeLimit(3000);
     };
     ~Impl(){};
 };
@@ -148,83 +152,87 @@ bool RunTemplateMatch::setPyramidLevel(int level)
     return true;
 }
 
-bool RunTemplateMatch::runTemplateMatch(cv::Mat run_img)
+bool RunTemplateMatch::runTemplateMatch(cv::Mat run_img, std::shared_ptr<smartmore::vitip::PatternPlanar>& pattern)
 {
-    auto code = impl_->fm_tool_run.templateRun(run_img, impl_->output, impl_->fm_tool_pattern, impl_->runParams, run_img);
+    smartmore::vitip::PatternPlanar fm_tool_pat = *pattern.get();
+    auto code = impl_->fm_tool_run.templateRun(run_img, impl_->output, fm_tool_pat, impl_->runParams, run_img);
     if(code != smartmore::vitip::ErrorCode::kResultOk){
         return false;
     }
+
+    qDebug() << "Run success: " << impl_->output.getScores()[0];
     return true;
+
 }
 
-const smartmore::vitip::OutputPlanar& RunTemplateMatch::getOuput()
+const std::shared_ptr<smartmore::vitip::OutputPlanar>& RunTemplateMatch::getOuput()
 {
-    return impl_->output;
+    impl_->output_ptr = std::make_shared<smartmore::vitip::OutputPlanar>(impl_->output);
+    return impl_->output_ptr;
 }
 
-class TrainOutput::Impl{
-public:
-    TrainTemplateMatch trainParams;
-    smartmore::vitip::PatternPlanar pattern_tool;
-
-    Impl(){
-        pattern_tool = trainParams.getFMTool();
-    };
-    ~Impl(){};
-};
-
-TrainOutput::TrainOutput(): impl_(std::make_shared<TrainOutput::Impl>()){}
-TrainOutput::~TrainOutput(){}
-
-std::vector<cv::Point2f> TrainOutput::getTemplateCurves() const
-{
-    return impl_->pattern_tool.getOriginalTemplateCurve();
-}
-
-
-class RunOutput::Impl{
-public:
-    RunTemplateMatch runParams;
-    smartmore::vitip::OutputPlanar output;
-
-
-    Impl(){
-        output = runParams.getOuput();
-    };
-    ~Impl(){};
-};
-
-RunOutput::RunOutput(): impl_(std::make_shared<RunOutput::Impl>()){}
-RunOutput::~RunOutput(){}
-
-bool RunOutput::getNG()
-{
-    return impl_->output.getNG();
-}
-
-std::vector<std::vector<cv::Point2f>> RunOutput::getCurves() const
-{
-    return impl_->output.getCurves();
-}
-
-std::vector<cv::Point2f> RunOutput::getCenters() const
-{
-    return impl_->output.getCenters();
-}
-
-std::vector<double> RunOutput::getScores() const
-{
-    return impl_->output.getScores();
-}
-
-std::vector<cv::Mat> RunOutput::getHomographys() const
-{
-    return impl_->output.getHomographys();
-}
-
-std::vector<float> RunOutput::getAngles() const
-{
-    return impl_->output.getAngles();
-}
+//class TrainOutput::Impl{
+//public:
+//    TrainTemplateMatch trainParams_;
+//    std::shared_ptr<smartmore::vitip::PatternPlanar> pattern_tool;
+//
+//    Impl(){
+//        pattern_tool = trainParams_.getFMTool();
+//    };
+//    ~Impl(){};
+//};
+//
+//TrainOutput::TrainOutput(): impl_(std::make_shared<TrainOutput::Impl>()){}
+//TrainOutput::~TrainOutput(){}
+//
+//std::vector<cv::Point2f> TrainOutput::getTemplateCurves() const
+//{
+//    return impl_->pattern_tool->getOriginalTemplateCurve();
+//}
+//
+//class RunOutput::Impl{
+//public:
+//    RunTemplateMatch runParams;
+//    smartmore::vitip::OutputPlanar output;
+//
+//
+//    Impl(){
+//        output = runParams.getOuput();
+//    };
+//    ~Impl(){};
+//};
+//
+//RunOutput::RunOutput(): impl_(std::make_shared<RunOutput::Impl>()){}
+//RunOutput::~RunOutput(){}
+//
+//bool RunOutput::getNG()
+//{
+//    return impl_->output.getNG();
+//}
+//
+//std::vector<std::vector<cv::Point2f>> RunOutput::getCurves() const
+//{
+//    return impl_->output.getCurves();
+//}
+//
+//std::vector<cv::Point2f> RunOutput::getCenters() const
+//{
+//    return impl_->output.getCenters();
+//}
+//
+//std::vector<double> RunOutput::getScores() const
+//{
+//    return impl_->output.getScores();
+//}
+//
+//std::vector<cv::Mat> RunOutput::getHomographys() const
+//{
+//    return impl_->output.getHomographys();
+//}
+//
+//std::vector<float> RunOutput::getAngles() const
+//{
+//    return impl_->output.getAngles();
+//}
 
 } //namespace mark

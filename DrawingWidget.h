@@ -43,7 +43,7 @@ private:
 
     QVector<QPoint> points;
     QVector<QPoint> mask_points;
-    void drawCircle(QPainter &painter, const QPoint &point) const;
+    void drawCircle(QPainter &painter, const QPoint &point, int radius) const;
 
 };
 

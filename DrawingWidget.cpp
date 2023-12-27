@@ -26,9 +26,13 @@ void DrawingWidget::setImage(const QImage &newImage) {
     image = newImage;
 }
 
-void DrawingWidget::drawCircle(QPainter &painter, const QPoint &point) const {
-    const int radius = 15; // Set the radius of the brush
-    painter.drawEllipse(point, radius, 0); // Draw a circle at the given point
+// void DrawingWidget::drawCircle(QPainter &painter, const QPoint &point) const {
+//     const int radius = 15; // Set the radius of the brush
+//     painter.drawEllipse(point, radius, 0); // Draw a circle at the given point
+// }
+
+void DrawingWidget::drawCircle(QPainter &painter, const QPoint &point, int radius) const {
+    painter.drawEllipse(point, radius, radius); // 使用提供的半径绘制圆
 }
 
 void DrawingWidget::mousePressEvent(QMouseEvent *event) {
@@ -56,35 +60,66 @@ void DrawingWidget::mouseMoveEvent(QMouseEvent *event) {
 
 void DrawingWidget::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton || event->button() == Qt::RightButton) {
-        update();  // 调用结束绘制的方法
+        update();  
     }
 }
 
 void DrawingWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
-
     QSize scaledSize = image.size();
     scaledSize.scale(size(), Qt::KeepAspectRatio);
     xScaleFactor = (qreal)scaledSize.width() / image.width();
     yScaleFactor = (qreal)scaledSize.height() / image.height();
 
     painter.drawImage(QRect(QPoint(0, 0), scaledSize), image);
-    //
-    painter.setPen(QPen(Qt::white, 30));
+
+    painter.setPen(QPen(Qt::green, 30)); // 使用固定笔的宽度
+    int radius = 15; // 固定半径
     for (const QPoint &point : points) {
-        drawCircle(painter, point);
+        drawCircle(painter, point, radius);
     }
 }
+
+// QImage DrawingWidget::getMask() const {
+//     QImage mask(image.size(), QImage::Format_ARGB32);
+//     mask.fill(Qt::black);
+
+//     QPainter painter(&mask);
+//     painter.setPen(QPen(Qt::white, 30/ qMin(xScaleFactor, yScaleFactor)));
+
+//     for (const QPoint &point : points) {
+//         drawCircle(painter, QPoint(point.x() / xScaleFactor, point.y() / yScaleFactor)); // 修复回去
+//     }
+
+//     return mask;
+// }
+
+// QImage DrawingWidget::getMask() const {
+//     QImage mask(image.size(), QImage::Format_ARGB32);
+//     mask.fill(Qt::black);
+
+//     QPainter painter(&mask);
+//     painter.setPen(QPen(Qt::white, 30)); // 使用与 paintEvent 相同的笔宽
+
+//     int radius = 15; // 使用与 paintEvent 相同的半径
+//     for (const QPoint &point : points) {
+//         drawCircle(painter, QPoint(point.x() / xScaleFactor, point.y() / yScaleFactor), radius);
+//     }
+
+//     return mask;
+// }
 
 QImage DrawingWidget::getMask() const {
     QImage mask(image.size(), QImage::Format_ARGB32);
     mask.fill(Qt::black);
 
     QPainter painter(&mask);
-    painter.setPen(QPen(Qt::white, 30));
+    painter.setPen(QPen(Qt::white, 30 / xScaleFactor));
 
+    int radius = 15 / xScaleFactor; // 调整半径大小
     for (const QPoint &point : points) {
-        drawCircle(painter, QPoint(point.x() / xScaleFactor, point.y()/ yScaleFactor)); // 修复回去
+        QPoint scaledPoint(point.x() / xScaleFactor, point.y() / yScaleFactor);
+        drawCircle(painter, scaledPoint, radius);
     }
 
     return mask;
